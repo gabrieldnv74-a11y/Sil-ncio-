@@ -1,0 +1,29 @@
+name: build
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.10.2
+      - name: Descompactar
+        run: unzip -q silencio-src.zip -d work
+      - name: Compilar
+        run: cd work/silencio && gradle build --no-daemon
+      - name: Publicar jar numa Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          JAR=$(ls work/silencio/build/libs/*.jar | grep -v sources | head -n1)
+          gh release create "v${{ github.run_number }}" "$JAR" --title "Build ${{ github.run_number }}" --notes "jar compilado automaticamente"
